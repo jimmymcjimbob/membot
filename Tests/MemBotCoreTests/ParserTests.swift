@@ -52,3 +52,7 @@ import Testing
   let text = "PID\tStatus\tLabel\n7781\t-9\tcom.apple.trustd.agent\n-\t0\tcom.apple.MailServiceAgent\n512\t0\thomebrew.mxcl.ollama\n"
   #expect(parseLaunchctlList(text) == [7781, 512])
 }
+
+@Test func topNonFiniteCPU() {
+  #expect(parseTopOutput("PID MEM %CPU\n1 1M nan\n2 1M inf\n3 1M -1.0\n4 1M 2.5").keys.sorted() == [4])
+}

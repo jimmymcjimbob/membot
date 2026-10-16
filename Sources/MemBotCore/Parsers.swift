@@ -34,7 +34,7 @@ public func parseTopOutput(_ text: String) -> [Int32: TopRow] {
   var rows: [Int32: TopRow] = [:]
   for line in lines[(header + 1)...] {
     let f = line.split(whereSeparator: \.isWhitespace)
-    guard f.count >= 3, let pid = Int32(f[0]), let bytes = parseTopMem(String(f[1])), let cpu = Double(f[2]) else { continue }
+    guard f.count >= 3, let pid = Int32(f[0]), let bytes = parseTopMem(String(f[1])), let cpu = Double(f[2]), cpu.isFinite, cpu >= 0 else { continue }
     rows[pid] = TopRow(footprint: bytes, cpuPercent: cpu)
   }
   return rows
