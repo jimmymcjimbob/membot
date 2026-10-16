@@ -3,6 +3,13 @@ import Charts
 import MemBotCore
 import MemBotSystem
 
+private let startFormatter: DateFormatter = {
+  let f = DateFormatter()
+  f.locale = Locale(identifier: "en_US_POSIX")
+  f.dateFormat = "HH:mm"
+  return f
+}()
+
 /// Everything the panel shows for one live process, kept so the last values survive when it ends.
 private struct Seen {
   let sample: ProcessSample
@@ -95,7 +102,7 @@ struct DetailPanel: View {
     let start = Date(timeIntervalSince1970: Double(s.key.startTime) / 1_000_000)
     VStack(alignment: .leading, spacing: 2) {
       Text(s.name).font(.title3.bold())
-      Text("pid \(s.pid) · \(owner(s.uid)) · started \(start.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))) (\(formatDuration(state.snapshot.time.timeIntervalSince(start))) ago)")
+      Text("pid \(s.pid) · \(owner(s.uid)) · started \(startFormatter.string(from: start)) (\(formatDuration(state.snapshot.time.timeIntervalSince(start))) ago)")
         .foregroundStyle(.secondary)
       if ended { Text("process ended").foregroundStyle(.red) }
     }
