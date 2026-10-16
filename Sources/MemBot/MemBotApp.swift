@@ -15,6 +15,7 @@ struct MemBotApp: App {
     MenuBarExtra { MenuPanel().environment(model) } label: { Image(systemName: "memorychip") }
       .menuBarExtraStyle(.window)
     Window("MemBot", id: "main") { MainWindow().environment(model) }
+      .defaultSize(width: 1500, height: 900)
     Settings { SettingsView().environment(model) }
   }
 }

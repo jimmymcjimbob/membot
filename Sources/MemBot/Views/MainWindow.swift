@@ -6,19 +6,23 @@ struct MainWindow: View {
   @Environment(AppModel.self) private var model
   @State private var query = ""
   @State private var selection: Int32?
+  @State private var tableWidth: CGFloat = 1000
 
   var body: some View {
     @Bindable var model = model
     Group {
       if let state = model.state {
-        HSplitView {
-          ProcessTable(rows: rows(state), now: state.snapshot.time, selection: $selection)
-            .frame(minWidth: 460)
-          Group {
-            if let selection { DetailPanel(pid: selection, state: state).id(selection) }
-            else { Text("Select a process").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity) }
+        GeometryReader { geo in
+          HStack(spacing: 0) {
+            ProcessTable(rows: rows(state), now: state.snapshot.time, selection: $selection)
+              .frame(width: clampedTableWidth(geo.size.width))
+            SplitHandle(width: $tableWidth, range: 460...max(460, geo.size.width - 300))
+            Group {
+              if let selection { DetailPanel(pid: selection, state: state).id(selection) }
+              else { Text("Select a process").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity) }
+            }
+            .frame(maxWidth: .infinity)
           }
-          .frame(minWidth: 300, idealWidth: 360)
         }
       } else {
         Text("Sampling…").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -38,6 +42,10 @@ struct MainWindow: View {
     }
     .onAppear { model.visibleSurfaces += 1 }
     .onDisappear { model.visibleSurfaces = max(0, model.visibleSurfaces - 1) }
+  }
+
+  private func clampedTableWidth(_ total: CGFloat) -> CGFloat {
+    min(max(tableWidth, 460), max(460, total - 300))
   }
 
   private func rows(_ state: MonitorState) -> [ProcessRow] {
@@ -61,5 +69,30 @@ struct MainWindow: View {
       .padding(.horizontal, 12)
       .fixedSize()
     }
+  }
+}
+
+// HSplitView's 1 pt divider is hard to grab; this handle has a 9 pt hit area.
+private struct SplitHandle: View {
+  @Binding var width: CGFloat
+  let range: ClosedRange<CGFloat>
+  @State private var start: CGFloat?
+
+  var body: some View {
+    Rectangle()
+      .fill(Color.clear)
+      .frame(width: 9)
+      .overlay(Divider())
+      .contentShape(Rectangle())
+      .pointerStyle(.columnResize)
+      .gesture(
+        DragGesture(minimumDistance: 1, coordinateSpace: .global)
+          .onChanged { g in
+            let base = start ?? width
+            start = base
+            width = min(max(base + g.translation.width, range.lowerBound), range.upperBound)
+          }
+          .onEnded { _ in start = nil }
+      )
   }
 }

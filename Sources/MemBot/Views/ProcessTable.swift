@@ -59,18 +59,19 @@ struct ProcessTable: View {
     Table(sorted(rows, order), children: \.children, selection: $selection, sortOrder: $order) {
       TableColumn("Process", value: \.name) { r in
         HStack(spacing: 4) {
-          Text(r.name).lineLimit(1)
+          Text(r.name).lineLimit(1).layoutPriority(1)
           if !r.suffix.isEmpty { Text(r.suffix).foregroundStyle(.secondary).lineLimit(1) }
         }
       }
+      .width(min: 160, ideal: 320)
       TableColumn("Memory", value: \.footprint) { r in Text(formatBytes(r.footprint)).monospacedDigit() }
-        .width(min: 70, ideal: 80)
+        .width(88)
       TableColumn("CPU", value: \.cpuPercent) { r in Text("\(Int(r.cpuPercent.rounded()))%").monospacedDigit() }
-        .width(min: 45, ideal: 55)
+        .width(60)
       TableColumn("Ports") { r in Text(r.ports).lineLimit(1) }
-        .width(min: 50, ideal: 80)
+        .width(66)
       TableColumn("Status") { r in StatusCell(status: r.status, now: now) }
-        .width(min: 90, ideal: 110)
+        .width(110)
     }
   }
 }

@@ -1,5 +1,4 @@
 import SwiftUI
-import Charts
 import MemBotCore
 import MemBotSystem
 
@@ -134,50 +133,7 @@ struct DetailPanel: View {
   }
 
   private func graph(_ v: Seen) -> some View {
-    let end = state.snapshot.time
-    let domain = end.addingTimeInterval(-600)...end
-    return VStack(alignment: .leading, spacing: 4) {
-      Chart(points, id: \.time) {
-        LineMark(x: .value("Time", $0.time), y: .value("MB", Double($0.footprint) / 1_048_576))
-          .foregroundStyle(Color(red: 0x5a / 255, green: 0xa9 / 255, blue: 1))
-      }
-      .chartXScale(domain: domain)
-      .chartXAxis { timeAxis(labels: false) }
-      .chartYScale(domain: .automatic(includesZero: false))
-      .chartYAxis { valueAxis { "\(Int($0)) MB" } }
-      .frame(height: 80)
-      Chart(points, id: \.time) {
-        LineMark(x: .value("Time", $0.time), y: .value("CPU %", $0.cpuPercent))
-          .foregroundStyle(Color(red: 0x3f / 255, green: 0xb9 / 255, blue: 0x6b / 255))
-      }
-      .chartXScale(domain: domain)
-      .chartXAxis { timeAxis(labels: true) }
-      .chartYAxis { valueAxis { "\(Int($0))%" } }
-      .frame(height: 70)
-      Text("memory \(v.sample.footprint.map(formatBytes) ?? "not available") · CPU \(points.last.map { "\(Int($0.cpuPercent.rounded()))%" } ?? "not available")")
-        .font(.caption).foregroundStyle(.secondary)
-    }
-    .padding(6).background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
-  }
-
-  // Same time marks on both charts; labels only under the lower one.
-  private func timeAxis(labels: Bool) -> some AxisContent {
-    AxisMarks(values: .stride(by: .minute, count: 2)) { _ in
-      AxisGridLine()
-      if labels { AxisValueLabel(format: .dateTime.hour(.twoDigits(amPM: .omitted)).minute()) }
-    }
-  }
-
-  // Fixed label width keeps both plot areas the same width, so the time marks line up.
-  private func valueAxis(_ label: @escaping (Double) -> String) -> some AxisContent {
-    AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { value in
-      AxisGridLine()
-      AxisValueLabel {
-        if let v = value.as(Double.self) {
-          Text(label(v)).frame(width: 52, alignment: .trailing)
-        }
-      }
-    }
+    UsageGraph(points: points, end: state.snapshot.time, footprint: v.sample.footprint)
   }
 
   private func addr(_ s: SocketInfo) -> String {
