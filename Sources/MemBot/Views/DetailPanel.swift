@@ -95,7 +95,7 @@ struct DetailPanel: View {
     let start = Date(timeIntervalSince1970: Double(s.key.startTime) / 1_000_000)
     VStack(alignment: .leading, spacing: 2) {
       Text(s.name).font(.title3.bold())
-      Text("pid \(s.pid) · \(owner(s.uid)) · started \(start.formatted(date: .omitted, time: .shortened)) (\(formatDuration(state.snapshot.time.timeIntervalSince(start))) ago)")
+      Text("pid \(s.pid) · \(owner(s.uid)) · started \(start.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))) (\(formatDuration(state.snapshot.time.timeIntervalSince(start))) ago)")
         .foregroundStyle(.secondary)
       if ended { Text("process ended").foregroundStyle(.red) }
     }
@@ -142,7 +142,7 @@ struct DetailPanel: View {
       }
       .chartXScale(domain: end.addingTimeInterval(-600)...end)
       .frame(height: 50)
-      Text("memory \(formatBytes(v.sample.footprint ?? 0)) · CPU \(Int((points.last?.cpuPercent ?? 0).rounded()))%")
+      Text("memory \(v.sample.footprint.map(formatBytes) ?? "not available") · CPU \(points.last.map { "\(Int($0.cpuPercent.rounded()))%" } ?? "not available")")
         .font(.caption).foregroundStyle(.secondary)
     }
     .padding(6).background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
