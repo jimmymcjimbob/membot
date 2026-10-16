@@ -63,6 +63,9 @@ import Testing
     #expect(sendSignal(0, to: me.key) == .sent)
     let launchd = try #require(all.first { $0.pid == 1 })
     #expect(sendSignal(0, to: launchd.key) == .notPermitted)
+    let kernel = try #require(all.first { $0.pid == 0 })
+    #expect(sendSignal(0, to: kernel.key) == .notPermitted)
+    #expect(sendSignal(0, to: ProcessKey(pid: -getpid(), startTime: me.key.startTime)) == .notPermitted)
   }
 
   @Test func commandsRun() async {

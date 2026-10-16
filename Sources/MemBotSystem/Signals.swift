@@ -7,6 +7,8 @@ public enum SignalResult: Equatable, Sendable {
 
 /// Sends `signal` only if `key.pid` is still the process that `key` was sampled from.
 public func sendSignal(_ signal: Int32, to key: ProcessKey) -> SignalResult {
+  // kill() treats pid 0 and negative pids as process groups, which could include MemBot itself.
+  guard key.pid > 0 else { return .notPermitted }
   var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, key.pid]
   var kp = kinfo_proc()
   var size = MemoryLayout<kinfo_proc>.stride
