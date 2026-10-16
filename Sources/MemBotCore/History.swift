@@ -19,7 +19,7 @@ public struct History: Sendable {
     var next: [ProcessKey: [HistoryPoint]] = [:]
     next.reserveCapacity(snapshot.processes.count)
     for p in snapshot.processes.values {
-      var pts = series[p.key] ?? []
+      var pts = series.removeValue(forKey: p.key) ?? [] // take ownership: avoids copy-on-write of the series
       // Series is time-ordered, so only the expired prefix needs dropping.
       if let first = pts.first, first.time < cutoff {
         pts.removeFirst(pts.prefix { $0.time < cutoff }.count)
