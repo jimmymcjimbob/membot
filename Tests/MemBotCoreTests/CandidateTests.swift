@@ -179,3 +179,13 @@ private func listen(_ port: UInt16) -> SocketInfo {
   }
   #expect(eval(forest(ps(900)), tr, at: 900).candidates.map(\.key.pid) == [62480])
 }
+
+@Test func equalFootprintCandidatesInPIDOrder() {
+  let ps = (0..<6).map { proc(30920 + Int32($0), ppid: 1, name: "node", path: "/Users/james/bin/node", footprint: 7) }
+  var tr = ActivityTracker()
+  run(&tr, 0, 300) { _ in ps }
+  let gs = forest(ps)
+  for order in [gs, gs.reversed(), gs.shuffled()] {
+    #expect(eval(order, tr, at: 300).candidates.map(\.key.pid) == ps.map(\.pid))
+  }
+}

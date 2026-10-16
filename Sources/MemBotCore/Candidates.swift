@@ -61,7 +61,7 @@ public func evaluate(_ groups: [RootGroup], tracker: ActivityTracker, settings: 
     }
     walk(g.node)
   }
-  candidates.sort { $0.totalFootprint > $1.totalFootprint }
+  candidates.sort { $0.totalFootprint != $1.totalFootprint ? $0.totalFootprint > $1.totalFootprint : $0.key.pid < $1.key.pid }
 
   let needed = TimeInterval(settings.candidateIdleMinutes * 60)
   let elapsed = tracker.clockStart.map { now.timeIntervalSince($0) } ?? 0
