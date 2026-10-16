@@ -7,5 +7,7 @@ let package = Package(
     targets: [
         .target(name: "MemBotCore"),
         .testTarget(name: "MemBotCoreTests", dependencies: ["MemBotCore"]),
+        .target(name: "MemBotSystem", dependencies: ["MemBotCore"]),
+        .testTarget(name: "MemBotSystemTests", dependencies: ["MemBotSystem", "MemBotCore"]),
     ]
 )
