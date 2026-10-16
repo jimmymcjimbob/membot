@@ -21,17 +21,21 @@ struct SettingsView: View {
   }
 }
 
-/// One name per line.
+/// One name per line. Edits go through a text buffer so a new empty line survives while typing.
 private struct NameList: View {
   let title: String
   @Binding var names: [String]
+  @State private var text = ""
 
   var body: some View {
     LabeledContent(title) {
-      TextEditor(text: Binding(get: { names.joined(separator: "\n") },
-                               set: { names = $0.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }))
+      TextEditor(text: $text)
         .font(.body.monospaced())
         .frame(height: 80)
+        .onAppear { text = names.joined(separator: "\n") }
+        .onChange(of: text) { _, new in
+          names = new.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        }
     }
   }
 }

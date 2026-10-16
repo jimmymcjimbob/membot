@@ -2,10 +2,13 @@ import SwiftUI
 
 @main
 struct MemBotApp: App {
-  @State private var model = AppModel()
+  @State private var model: AppModel
 
   init() {
     NSApplication.shared.setActivationPolicy(.accessory)
+    let m = AppModel()
+    _model = State(initialValue: m)
+    m.start()
   }
 
   var body: some Scene {
