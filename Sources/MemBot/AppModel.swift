@@ -7,7 +7,9 @@ import MemBotSystem
 final class AppModel {
   var state: MonitorState?
   var filter: FilterMode = .all
-  var visibleSurfaces = 0
+  var visibleSurfaces = 0 {
+    didSet { if oldValue == 0, visibleSurfaces > 0 { nap?.cancel() } } // wake the loop so an opened surface gets fresh data
+  }
   var signalMessages: [ProcessKey: String] = [:]
   var launchAtLoginError: String?
   var settings: MemBotSettings {
@@ -22,6 +24,7 @@ final class AppModel {
 
   @ObservationIgnored private let monitor: Monitor
   @ObservationIgnored private var loop: Task<Void, Never>?
+  @ObservationIgnored private var nap: Task<Void, Never>?
 
   init() {
     let first = !SettingsStore.hasSaved
@@ -39,9 +42,14 @@ final class AppModel {
     loop = Task { [weak self] in
       while !Task.isCancelled {
         guard let self else { return }
+        // Set before each tick (not from didSet) so a wake-up tick already sees the new visibility.
+        await self.monitor.setVisible(self.visibleSurfaces > 0)
         let next = await self.monitor.tick()
         self.state = next
-        try? await Task.sleep(for: .seconds(self.visibleSurfaces > 0 ? 1 : 5))
+        let seconds = self.visibleSurfaces > 0 ? 1 : 5
+        let nap = Task { _ = try? await Task.sleep(for: .seconds(seconds)) }
+        self.nap = nap
+        await nap.value
       }
     }
   }
