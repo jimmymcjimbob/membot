@@ -52,7 +52,10 @@ public struct RootMemory: Sendable {
   public mutating func record(_ groups: [RootGroup]) {
     var next: [ProcessKey: (ppid: Int32, root: String)] = [:]
     func visit(_ n: ProcessNode, _ root: String) {
-      if let s = n.sample, s.ppid != 0, s.ppid != 1 { next[s.key] = (s.ppid, root) }
+      if let s = n.sample {
+        if s.ppid != 0, s.ppid != 1 { next[s.key] = (s.ppid, root) }
+        else if let old = entries[s.key] { next[s.key] = old } // reparented: keep the old root
+      }
       n.children.forEach { visit($0, root) }
     }
     for g in groups { visit(g.node, g.name) }

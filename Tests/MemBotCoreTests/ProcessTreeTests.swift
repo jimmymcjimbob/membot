@@ -140,3 +140,14 @@ private let terminalProcs = [
   #expect(!isAITool(try #require(group(gs, "Brave Browser")), names: names))
   #expect(!isAITool(try #require(group(gs, bgName)), names: names))
 }
+
+@Test func orphanSurvivesSecondTick() throws {
+  var memory = RootMemory()
+  memory.record(buildForest(input(terminalProcs + [proc(30925, ppid: 62480, name: "node")]), memory: memory))
+  let orphaned = input([proc(30925, ppid: 1, name: "node", path: "/Users/james/bin/node")], jobs: nil)
+  let first = buildForest(orphaned, memory: memory)
+  memory.record(first)
+  let second = try #require(buildForest(orphaned, memory: memory).first)
+  #expect(second.kind == .orphan)
+  #expect(second.lastKnownRoot == "claude")
+}
