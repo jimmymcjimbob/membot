@@ -36,6 +36,7 @@ private func fakeSources(_ processes: [ProcessSample], top: [Int32: TopRow]? = [
 private func run(_ sources: MonitorSources, count: Int, every: TimeInterval = 5) async -> (Monitor, MonitorState) {
   let clock = Locked(t0)
   let monitor = Monitor(sources: sources, settings: MemBotSettings(), ownerUID: owner, now: { clock.value })
+  await monitor.setVisible(true)
   var state = await monitor.tick()
   for _ in 1..<count {
     await monitor.awaitBackgroundWork()
@@ -78,5 +79,23 @@ private func run(_ sources: MonitorSources, count: Int, every: TimeInterval = 5)
   @Test func historyForSelected() async {
     let (monitor, _) = await run(fakeSources([launchd, node]), count: 3)
     #expect(await monitor.history(node.key).count == 3)
+  }
+
+  @Test func topOnlyWhileVisible() async {
+    let calls = Locked(0)
+    var sources = fakeSources([launchd, node])
+    sources.top = { calls.value += 1; return [:] }
+    let clock = Locked(t0)
+    let monitor = Monitor(sources: sources, settings: MemBotSettings(), ownerUID: owner, now: { clock.value })
+    for _ in 0...4 { // t0 ... t0 + 20 s
+      _ = await monitor.tick()
+      await monitor.awaitBackgroundWork()
+      clock.value += 5
+    }
+    #expect(calls.value == 0)
+    await monitor.setVisible(true)
+    _ = await monitor.tick()
+    await monitor.awaitBackgroundWork()
+    #expect(calls.value == 1)
   }
 }

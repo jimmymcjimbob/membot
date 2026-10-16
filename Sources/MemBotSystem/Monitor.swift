@@ -58,6 +58,7 @@ public actor Monitor {
   private var topTask: Task<Void, Never>?
   private var topStarted: Date?
   private var topRows: [Int32: TopRow] = [:]
+  private var visible = false
   private var launchdTask: Task<Void, Never>?
   private var launchdStarted: Date?
   private var launchdPIDs: Set<Int32>?
@@ -71,6 +72,9 @@ public actor Monitor {
   }
 
   public func update(settings: MemBotSettings) { self.settings = settings }
+
+  /// `top` costs ~1 s CPU per run and only feeds the display, so it runs only while a surface is visible.
+  public func setVisible(_ visible: Bool) { self.visible = visible }
 
   public func history(_ key: ProcessKey) -> [HistoryPoint] { history.points(key) }
 
@@ -126,7 +130,7 @@ public actor Monitor {
   }
 
   private func startBackgroundWork(_ time: Date) {
-    if topTask == nil, topStarted.map({ time.timeIntervalSince($0) >= Self.topInterval }) ?? true {
+    if visible, topTask == nil, topStarted.map({ time.timeIntervalSince($0) >= Self.topInterval }) ?? true {
       topStarted = time
       topTask = Task {
         let rows = await sources.top()
