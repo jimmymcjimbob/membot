@@ -33,8 +33,9 @@ func makeRows(_ groups: [RootGroup], statuses: [Int32: ProcessStatus], cpu: [Int
   return groups.map { g in
     var suffix = "· \(g.node.descendantCount)"
     if let cwd = g.cwd { suffix += " · \(tilde(cwd))" }
+    if g.kind == .orphan { suffix = "\(g.node.pid) · no parent" + (g.lastKnownRoot.map { " · was under \($0)" } ?? "") }
     return ProcessRow(id: g.node.pid, key: g.node.sample?.key, name: g.name,
-                      suffix: g.node.descendantCount == 0 && g.cwd == nil ? "" : suffix,
+                      suffix: g.kind != .orphan && g.node.descendantCount == 0 && g.cwd == nil ? "" : suffix,
                       footprint: g.node.totalFootprint, cpuPercent: g.node.totalCPUPercent,
                       ports: listeningPorts(g.node.sample), status: statuses[g.node.pid],
                       children: g.node.children.isEmpty ? nil : g.node.children.map(child))

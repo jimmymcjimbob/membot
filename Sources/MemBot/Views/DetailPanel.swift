@@ -33,7 +33,7 @@ private struct Seen {
     }
     let found = Seen.locate(s.pid, state.groups)
     let group = found?.0
-    let orphan = group?.kind == .orphan
+    let orphan = group?.kind == .orphan && found?.1.pid == group?.node.pid // only the orphan root lost its parent
     root = group.map { g in tilde([g.name, g.cwd].compactMap { $0 }.joined(separator: " · ")) }
       .map { r in orphan ? (group?.lastKnownRoot.map { "was under \($0)" } ?? r) : r } ?? "not available"
     parent = orphan ? "parent gone" : state.snapshot.processes[s.ppid].map { "\($0.name) \($0.pid)" } ?? "none"
