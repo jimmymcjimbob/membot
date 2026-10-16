@@ -103,7 +103,7 @@ MemBot samples once a second while the panel or the main window is open, and onc
 ## Build and run
 
 ```bash
-git clone <this repository>
+git clone https://github.com/jimmymcjimbob/membot.git
 cd membot
 bash scripts/build-app.sh
 open build/MemBot.app
