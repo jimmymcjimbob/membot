@@ -56,7 +56,10 @@ struct MainWindow: View {
         UsageBar(percent: memPct, level: usageLevel(memPct, warnAt: s.warnPercent, critAt: s.critPercent)).frame(width: 70)
         Text("CPU \(Int(sys.cpuPercent.rounded()))%").monospacedDigit()
         UsageBar(percent: sys.cpuPercent, level: usageLevel(sys.cpuPercent, warnAt: s.warnPercent, critAt: s.critPercent)).frame(width: 70)
-      }.font(.system(size: 12))
+      }
+      .font(.system(size: 12))
+      .padding(.horizontal, 12)
+      .fixedSize()
     }
   }
 }
