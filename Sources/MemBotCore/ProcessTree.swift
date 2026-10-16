@@ -90,6 +90,15 @@ private func isShell(_ p: ProcessSample) -> Bool {
   ["zsh", "bash", "sh", "fish"].contains(p.name.hasPrefix("-") ? String(p.name.dropFirst()) : p.name)
 }
 
+/// Name from argv: versioned binaries (claude) and interpreter scripts (codex under node) hide the tool in `p.name`.
+private func commandName(_ p: ProcessSample) -> String {
+  guard let args = p.arguments, let first = args.first else { return p.name }
+  let base = { (s: String) in (s as NSString).lastPathComponent }
+  guard ["node", "bun", "deno", "python", "python3"].contains(base(first)) else { return base(first) }
+  guard let script = args.dropFirst().first(where: { !$0.hasPrefix("-") }) else { return base(first) }
+  return (base(script) as NSString).deletingPathExtension
+}
+
 private enum Place { case background, root(RootKind), child(Int32) }
 
 public func buildForest(_ input: TreeInput, memory: RootMemory) -> [RootGroup] {
@@ -157,7 +166,7 @@ public func buildForest(_ input: TreeInput, memory: RootMemory) -> [RootGroup] {
     let name: String
     switch kind {
     case .app(let b): name = bundleName(b)
-    case .command: name = (p.arguments ?? []).joined(separator: " ").contains("ComfyUI") ? "ComfyUI" : p.name
+    case .command: name = (p.arguments ?? []).joined(separator: " ").contains("ComfyUI") ? "ComfyUI" : commandName(p)
     default: name = p.name
     }
     return RootGroup(kind: kind, name: name, cwd: kind == .command ? p.cwd : nil, node: node(p.pid),

@@ -151,3 +151,36 @@ private let terminalProcs = [
   #expect(second.kind == .orphan)
   #expect(second.lastKnownRoot == "claude")
 }
+
+private func commandRoot(_ p: ProcessSample) -> [RootGroup] {
+  buildForest(input([
+    proc(10, ppid: 1, name: "ghostty", path: "/Applications/Ghostty.app/Contents/MacOS/ghostty"),
+    proc(11, ppid: 10, name: "zsh"),
+    p,
+  ]), memory: RootMemory())
+}
+
+@Test func commandRootNamedFromArgv0() throws {
+  let gs = commandRoot(proc(12, ppid: 11, name: "2.1.301",
+                            path: "/Users/james/.local/share/claude/versions/2.1.301", args: ["claude"]))
+  let c = try #require(gs.first { $0.node.pid == 12 })
+  #expect(c.name == "claude")
+  #expect(isAITool(c, names: MemBotSettings().aiToolNames))
+}
+
+@Test func commandRootUnderInterpreterNamedFromScript() throws {
+  let gs = commandRoot(proc(12, ppid: 11, name: "node", path: "/Users/james/.nvm/versions/node/v22.22.0/bin/node",
+                            args: ["node", "/Users/james/.nvm/versions/node/v22.22.0/bin/codex"]))
+  let c = try #require(gs.first { $0.node.pid == 12 })
+  #expect(c.name == "codex")
+  #expect(isAITool(c, names: MemBotSettings().aiToolNames))
+  let js = commandRoot(proc(12, ppid: 11, name: "node", args: ["node", "--no-warnings", "/x/cli.js", "run"]))
+  #expect(js.first { $0.node.pid == 12 }?.name == "cli")
+}
+
+@Test func commandRootWithoutArgsUsesProcessName() throws {
+  for args in [nil, []] as [[String]?] {
+    let gs = commandRoot(proc(12, ppid: 11, name: "2.1.301", path: "/x/2.1.301", args: args))
+    #expect(gs.first { $0.node.pid == 12 }?.name == "2.1.301")
+  }
+}
