@@ -49,7 +49,7 @@ public struct ActivityTracker: Sendable {
     lastIngest = now
     var next: [ProcessKey: Entry] = [:]
     for s in snapshot.processes.values {
-      let top = max(cpuPercent[s.pid] ?? 0, s.cpuPercent ?? 0)
+      let top = s.cpuPercent ?? 0
       guard var e = entries[s.key] else {
         next[s.key] = Entry(lastActive: now, bucket: Self.bucket(s, now))
         continue

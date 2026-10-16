@@ -163,3 +163,19 @@ private func listen(_ port: UInt16) -> SocketInfo {
   #expect(r[10] == 50)
   #expect(r[11] == nil)
 }
+
+@Test func shortBurstsBelowMinuteAverageStayIdle() {
+  // 100 ms of CPU in one 5 s window per minute: 2% in that window, 0.17% over the minute.
+  func ps(_ t: TimeInterval) -> [ProcessSample] {
+    let ns = UInt64((t / 60).rounded(.down)) * 100_000_000 + (Int(t) % 60 >= 55 ? 100_000_000 : 0)
+    return terminal.map { $0.pid == 95001 ? proc(95001, ppid: 95000, name: "git", cpuTimeNs: ns) : $0 }
+  }
+  var tr = ActivityTracker()
+  var prev: Snapshot?
+  for t in stride(from: 0.0, through: 900, by: 5) {
+    let s = snap(t, ps(t))
+    tr.ingest(s, cpuPercent: processCPUPercents(previous: prev, current: s), settings: MemBotSettings())
+    prev = s
+  }
+  #expect(eval(forest(ps(900)), tr, at: 900).candidates.map(\.key.pid) == [62480])
+}
