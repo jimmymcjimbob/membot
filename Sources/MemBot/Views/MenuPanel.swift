@@ -7,6 +7,8 @@ struct MenuPanel: View {
   @Environment(AppModel.self) private var model
   @Environment(\.openWindow) private var openWindow
   @State private var expanded = Set<Int32>()
+  /// Candidate order from when the panel opened, so a one-click Term never hits a row that moved.
+  @State private var order: [ProcessKey] = []
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
@@ -16,13 +18,31 @@ struct MenuPanel: View {
         Text("Sampling…").foregroundStyle(.secondary)
       }
       Divider().padding(.top, 4)
-      Button("Open MemBot window…") { openMain() }.buttonStyle(.plain).foregroundStyle(.secondary)
+      HStack {
+        Button("Open MemBot window…") { openMain() }
+        Spacer()
+        SettingsLink { Text("Settings…") }
+        Button("Quit MemBot") { NSApp.terminate(nil) }
+      }.buttonStyle(.plain).foregroundStyle(.secondary)
     }
     .font(.system(size: 12))
     .padding(.horizontal, 14).padding(.vertical, 12)
     .frame(width: 340)
-    .onAppear { model.visibleSurfaces += 1 }
+    .onAppear {
+      model.visibleSurfaces += 1
+      order = candidateKeys
+    }
+    .onChange(of: candidateKeys) { order = stable(model.state?.evaluation.candidates ?? []).map(\.key) }
     .onDisappear { model.visibleSurfaces = max(0, model.visibleSurfaces - 1) }
+  }
+
+  private var candidateKeys: [ProcessKey] { model.state?.evaluation.candidates.map(\.key) ?? [] }
+
+  /// Known keys keep their place (ended ones drop out); new keys go at the end.
+  private func stable(_ cs: [Candidate]) -> [Candidate] {
+    let byKey = Dictionary(cs.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
+    let known = Set(order)
+    return order.compactMap { byKey[$0] } + cs.filter { !known.contains($0.key) }
   }
 
   private func openMain() {
@@ -69,25 +89,24 @@ struct MenuPanel: View {
     header("CANDIDATES FOR REMOVAL · \(ev.candidates.count)")
     if let w = ev.warmup {
       Text("watching · \(Int(w.elapsed / 60)) of \(Int(w.needed / 60)) min").foregroundStyle(.secondary)
-    } else {
-      ForEach(ev.candidates.prefix(5)) { c in
-        VStack(alignment: .leading, spacing: 2) {
-          row(Text("\(c.name) (pid \(c.key.pid))"), formatBytes(c.totalFootprint))
-          HStack {
-            Text(c.shortReason).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
-            Spacer()
-            SignalButtons(key: c.key, name: c.name,
-                          canSignal: state.snapshot.processes[c.key.pid].map { $0.key == c.key && model.canSignal($0) } ?? false,
-                          compact: true)
-          }
+    }
+    ForEach(stable(ev.candidates).prefix(5)) { c in
+      VStack(alignment: .leading, spacing: 2) {
+        row(Text("\(c.name) (pid \(c.key.pid))"), formatBytes(c.totalFootprint))
+        HStack {
+          Text(c.shortReason).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
+          Spacer()
+          SignalButtons(key: c.key, name: c.name,
+                        canSignal: state.snapshot.processes[c.key.pid].map { $0.key == c.key && model.canSignal($0) } ?? false,
+                        compact: true)
         }
-        .padding(.horizontal, 8).padding(.vertical, 6)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
       }
-      if ev.candidates.count > 5 {
-        Button("+ \(ev.candidates.count - 5) more") { model.filter = .candidates; openMain() }
-          .buttonStyle(.plain).foregroundStyle(.secondary)
-      }
+      .padding(.horizontal, 8).padding(.vertical, 6)
+      .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+    }
+    if ev.candidates.count > 5 {
+      Button("+ \(ev.candidates.count - 5) more") { model.filter = .candidates; openMain() }
+        .buttonStyle(.plain).foregroundStyle(.secondary)
     }
   }
 }
