@@ -54,7 +54,8 @@ private func parseTopMem(_ s: String) -> UInt64? {
   default: return nil
   }
   guard let n = Double(s.dropLast()), n >= 0, n.isFinite else { return nil }
-  return UInt64(n * Double(UInt64(1) << UInt64(shift)))
+  // exactly: nil on overflow instead of trapping
+  return UInt64(exactly: (n * Double(UInt64(1) << UInt64(shift))).rounded(.down))
 }
 
 /// PIDs of running jobs from `launchctl list` (header skipped, `-` PIDs ignored).

@@ -44,6 +44,10 @@ import Testing
   #expect(parseTopOutput("PID MEM %CPU\nabc 1M 0.0\n5 xyz 1.0\n6 2M\n7 3M 1.0").keys.sorted() == [7])
 }
 
+@Test func topOverflow() {
+  #expect(parseTopOutput("PID MEM %CPU\n1 99999999999999T 0.0\n2 1e30M 0.0").isEmpty)
+}
+
 @Test func launchctl() {
   let text = "PID\tStatus\tLabel\n7781\t-9\tcom.apple.trustd.agent\n-\t0\tcom.apple.MailServiceAgent\n512\t0\thomebrew.mxcl.ollama\n"
   #expect(parseLaunchctlList(text) == [7781, 512])
